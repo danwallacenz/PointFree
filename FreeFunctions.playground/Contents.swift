@@ -112,6 +112,7 @@ type(of: g)
 // Chapter 2 Side Effects
 // https://www.pointfree.co/episodes/ep2-side-effects
 
+
 // Hidden outputs
 
 typealias IntAndLogs = (Int, [String])
@@ -270,4 +271,125 @@ let append7: (String) -> [String] = { s in
 "abc" |> append7 >=> append6
 
 
+// Hidden inputs
 
+func uppercased(_ string: String) -> String {
+  return string.uppercased()
+}
+
+// returns a function
+// There’s a bit of a trick we can do to pull the Date out of that signature: we can rewrite greet to take a Date as input, but return a brand new function from (String) -> String that handles the actual greeting logic:
+
+func greet(at date: Date = Date()) -> (String) -> String {
+  return { name in
+    let s = Int(date.timeIntervalSince1970) % 60
+    return "Hello \(name)! It's \(s) seconds past the minute."
+  }
+}
+
+"Blob" |> uppercased >>> greet(at: Date())
+"Blob" |> greet(at: Date()) >>> uppercased
+
+// helper
+func assertEqual<T: Equatable>(_ lhs: T, _ rhs: T) -> String {
+    return lhs == rhs ?  "✅" : "❌"
+}
+
+assertEqual(
+  "Hello Blob! It's 37 seconds past the minute.",
+  "Blob" |> greet(at: Date(timeIntervalSince1970: 37))
+)
+
+
+// Mutation
+
+func toInout<A>(
+  _ f: @escaping (A) -> A
+  ) -> ((inout A) -> Void) {
+
+  return { a in
+    a = f(a)
+  }
+}
+
+func fromInout<A>(
+  _ f: @escaping (inout A) -> Void
+  ) -> ((A) -> A) {
+
+  return { a in
+    var copy = a
+    f(&copy)
+    return copy
+  }
+}
+
+precedencegroup SingleTypeComposition {
+  associativity: left
+  higherThan: ForwardApplication
+}
+
+infix operator <>: SingleTypeComposition
+
+func <> <A>(
+  f: @escaping (A) -> A,
+  g: @escaping (A) -> A)
+  -> ((A) -> A) {
+
+  return f >>> g
+}
+
+//func uppercased(_ s: String) -> String {
+//    return s.uppercased()
+//}
+
+func lowercased(_ s: String) -> String {
+    return s.lowercased()
+}
+
+func capitalize(_ s: String) -> String {
+    return s.capitalized
+}
+
+"AbC" |> uppercased <> lowercased <> capitalize
+
+func formLowercased(_ s: inout String) {
+    s = s.lowercased()
+}
+
+func formCapitalized(_ s: inout String) {
+    s = s.capitalized
+}
+
+
+func <> <A>(
+  f: @escaping (inout A) -> Void,
+  g: @escaping (inout A) -> Void)
+  -> ((inout A) -> Void) {
+
+  return { a in
+    f(&a)
+    g(&a)
+  }
+}
+
+func |> <A>(a: inout A, f: (inout A) -> Void) -> Void {
+  f(&a)
+}
+
+var mutableString = "AbC"
+
+mutableString |> formLowercased <> formCapitalized
+
+formLowercased |> fromInout
+lowercased |> toInout
+
+formCapitalized |> fromInout
+capitalize |> toInout
+
+fromInout(formLowercased)
+
+mutableString |> (lowercased |> toInout) <> formCapitalized
+mutableString |> (lowercased |> toInout) <> (capitalize |> toInout)
+
+
+mutableString |> (formLowercased |> fromInout) <> (formCapitalized |> fromInout)

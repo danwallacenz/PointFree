@@ -1,6 +1,7 @@
 
+// Episode one - Functions
 // for code completion mostly
-enum f {
+enum int {
     static func incr(_ x: Int) -> Int {
         return x + 1
     }
@@ -15,10 +16,16 @@ enum f {
 }
 
 // =====================================
-    
+// Operators
 precedencegroup ForwardApplication {
   associativity: left
 }
+
+// Pipe forward.
+// It’s generic over two types: A and B.
+// The lefthand side is our value, of type A,
+// while the righthand side is a function from A to B.
+// We finally return B by applying our value to our function.
 
 infix operator |>: ForwardApplication
 
@@ -26,8 +33,8 @@ func |> <A, B>(a: A, f: (A) -> B) -> B {
   return f(a)
 }
 
-3 |> f.incr |> f.square
-3 |> f.square |> f.incr
+3 |> int.incr |> int.square
+3 |> int.square |> int.incr
 
 // =====================================
 
@@ -36,6 +43,15 @@ precedencegroup ForwardComposition {
   higherThan: ForwardApplication
 }
 
+// Forward compose (or right arrow) operator.
+// It’s a function that’s generic over three generic parameters: A, B, and C.
+// It takes two functions, one from A to B, and one from B to C,
+// and glues them together by returning a new function
+// that passes the value in A to the function that takes A,
+// and passing the result, B, to the function that takes B.
+//
+// It's efficient in that with Map for example,
+// it traverses the collection once - not twice.
 infix operator >>>: ForwardComposition
 
 func >>> <A, B, C>(f: @escaping (A) -> B, g: @escaping (B) -> C) -> ((A) -> C) {
@@ -44,17 +60,22 @@ func >>> <A, B, C>(f: @escaping (A) -> B, g: @escaping (B) -> C) -> ((A) -> C) {
   }
 }
 
+(int.incr >>> int.square)(3)
+(int.square >>> int.incr)(3)
+
+3 |> int.incr >>> int.square
+3 |> int.square >>> int.incr
 
 
-(f.incr >>> f.square)(3)
-(f.square >>> f.incr)(3)
+[1, 2, 3]
+    .map(int.incr)
+    .map(int.square)
 
-3 |> f.incr >>> f.square
-3 |> f.square >>> f.incr
+[1, 2, 3].map(int.incr >>> int.square) |> String.init
+[1, 1, 2, 3, 3].map(int.incr >>> int.square) |> Set.init
 
-
-
-// an aside
+// ---------
+// An aside
 Int.isMultiple(6)(of: 0)
 Int.isMultiple(6)(of: 1)
 Int.isMultiple(6)(of: 2)
@@ -77,12 +98,7 @@ let g = Int.incr
 type(of: g)
 (3 |> Int.incr)()
 //3 |> (Int.incr >>> f.square)
+// ---------
 
-[1, 2, 3]
-    .map(f.incr)
-    .map(f.square)
-
-[1, 2, 3].map(f.incr >>> f.square) |> String.init
-[1, 1, 2, 3, 3].map(f.incr >>> f.square) |> Set.init
 
 

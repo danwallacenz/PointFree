@@ -44,7 +44,7 @@ func |> <A, B>(a: A, f: (A) -> B) -> B {
 precedencegroup EffectfulComposition {
   associativity: left
   higherThan: ForwardApplication
-//  lowerThan: ForwardComposition // must not be in the same module
+//  lowerThan: ForwardComposition // must not be in the same module (see below)
 }
 
 precedencegroup ForwardComposition {
@@ -109,9 +109,9 @@ type(of: g)
 //3 |> (Int.incr >>> f.square)
 // ---------
 
+
 // Chapter 2 Side Effects
 // https://www.pointfree.co/episodes/ep2-side-effects
-
 
 // Hidden outputs
 
@@ -197,8 +197,8 @@ steps5
 
 (37 * 37) * (37 * 37) + 1
 
-// but with parentheses!
-// so by making ForwardComposition higher than EffectfulComposition
+// But with parentheses!
+// So by making ForwardComposition higher than EffectfulComposition
 // we can remove them
 let (result6, steps6) =
 2
@@ -239,7 +239,6 @@ let divisibleBy10: (Int) -> Int? = { i in
 30 |> even >=> divisibleBy10
 
 // Arrays
-
 func >=> <A, B, C>(
   _ f: @escaping (A) -> [B],
   _ g: @escaping (B) -> [C]
@@ -323,6 +322,7 @@ func fromInout<A>(
   }
 }
 
+// Composition that deals with a single type
 precedencegroup SingleTypeComposition {
   associativity: left
   higherThan: ForwardApplication
@@ -338,10 +338,7 @@ func <> <A>(
   return f >>> g
 }
 
-//func uppercased(_ s: String) -> String {
-//    return s.uppercased()
-//}
-
+// returning functions - inputs/outputs a single type
 func lowercased(_ s: String) -> String {
     return s.lowercased()
 }
@@ -352,6 +349,7 @@ func capitalize(_ s: String) -> String {
 
 "AbC" |> uppercased <> lowercased <> capitalize
 
+// inout functions - mutates a single type
 func formLowercased(_ s: inout String) {
     s = s.lowercased()
 }
@@ -359,7 +357,6 @@ func formLowercased(_ s: inout String) {
 func formCapitalized(_ s: inout String) {
     s = s.capitalized
 }
-
 
 func <> <A>(
   f: @escaping (inout A) -> Void,
@@ -372,12 +369,14 @@ func <> <A>(
   }
 }
 
+// Pipe forward - inout functions
 func |> <A>(a: inout A, f: (inout A) -> Void) -> Void {
   f(&a)
 }
 
 var mutableString = "AbC"
 
+// inout functions
 mutableString |> formLowercased <> formCapitalized
 
 formLowercased |> fromInout
@@ -388,8 +387,8 @@ capitalize |> toInout
 
 fromInout(formLowercased)
 
+// parentheses!
 mutableString |> (lowercased |> toInout) <> formCapitalized
 mutableString |> (lowercased |> toInout) <> (capitalize |> toInout)
-
 
 mutableString |> (formLowercased |> fromInout) <> (formCapitalized |> fromInout)

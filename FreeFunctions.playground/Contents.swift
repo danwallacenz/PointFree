@@ -1,5 +1,8 @@
+import Foundation
 
 // Episode one - Functions
+// https://www.pointfree.co/episodes/ep1-functions
+
 // for code completion mostly
 enum int {
     static func incr(_ x: Int) -> Int {
@@ -38,9 +41,15 @@ func |> <A, B>(a: A, f: (A) -> B) -> B {
 
 // =====================================
 
-precedencegroup ForwardComposition {
+precedencegroup EffectfulComposition {
   associativity: left
   higherThan: ForwardApplication
+//  lowerThan: ForwardComposition // must not be in the same module
+}
+
+precedencegroup ForwardComposition {
+  associativity: left
+  higherThan: ForwardApplication, EffectfulComposition
 }
 
 // Forward compose (or right arrow) operator.
@@ -50,7 +59,7 @@ precedencegroup ForwardComposition {
 // that passes the value in A to the function that takes A,
 // and passing the result, B, to the function that takes B.
 //
-// It's efficient in that with Map for example,
+// It's efficient in that with Map, for example,
 // it traverses the collection once - not twice.
 infix operator >>>: ForwardComposition
 
@@ -99,6 +108,166 @@ type(of: g)
 (3 |> Int.incr)()
 //3 |> (Int.incr >>> f.square)
 // ---------
+
+// Chapter 2 Side Effects
+// https://www.pointfree.co/episodes/ep2-side-effects
+
+// Hidden outputs
+
+typealias IntAndLogs = (Int, [String])
+
+func computeAndPrint(_ x: Int) -> (Int, [String]) {
+  let computation = x * x + 1
+  return (computation, ["Computed \(computation)"])
+}
+
+computeAndPrint(2) // (5, ["Computed 5"])
+
+func compose<A, B, C>(
+  _ f: @escaping (A) -> (B, [String]),
+  _ g: @escaping (B) -> (C, [String])
+  ) -> (A) -> (C, [String]) {
+
+  return { a in
+    let (b, logs) = f(a)
+    let (c, moreLogs) = g(b)
+    return (c, logs + moreLogs)
+  }
+}
+
+// Problems...
+compose(computeAndPrint, computeAndPrint)
+
+let (result, steps) = 2 |> compose(computeAndPrint, computeAndPrint)
+result
+steps
+
+// But parentheses and two ways to compose the functions!
+let (result2, steps2)  = 2 |> compose(computeAndPrint, compose(computeAndPrint, computeAndPrint))
+result2
+steps2
+let (result3, steps3)  = 2 |> compose(compose(computeAndPrint, computeAndPrint), computeAndPrint)
+result3
+steps3
+
+// So introducing...
+//precedencegroup EffectfulComposition {
+//  associativity: left
+//  higherThan: ForwardApplication
+//  lowerThan: ForwardComposition // cannot do this in the same module (see above)
+//}
+
+// Effectful Composition (the 'fish' operator)
+infix operator >=>: EffectfulComposition
+
+func >=> <A, B, C>(
+  _ f: @escaping (A) -> (B, [String]),
+  _ g: @escaping (B) -> (C, [String])
+  ) -> (A) -> (C, [String]) {
+
+  return { a in
+    let (b, logs) = f(a)
+    let (c, moreLogs) = g(b)
+    return (c, logs + moreLogs)
+  }
+}
+
+computeAndPrint >=> computeAndPrint >=> computeAndPrint // (Int) -> (Int, [String])
+
+let (result4, steps4) =
+2
+|> computeAndPrint
+>=> computeAndPrint
+>=> computeAndPrint
+result4
+steps4
+
+
+let (result5, steps5) =
+2
+|> computeAndPrint
+    >=> (int.incr >>> computeAndPrint)
+    >=> (int.square >>> computeAndPrint)
+result5
+steps5
+
+2
+|> computeAndPrint
+
+(37 * 37) * (37 * 37) + 1
+
+// but with parentheses!
+// so by making ForwardComposition higher than EffectfulComposition
+// we can remove them
+let (result6, steps6) =
+2
+|> computeAndPrint
+>=> int.incr
+>>> computeAndPrint
+>=> int.square
+>>> computeAndPrint
+result6
+steps6
+
+//Every line is now annotated with an operator that provides meaning. Lines prefixed with >>> are dealing with the result of a function that has no side effect, while lines prefixed with >=> are a bit fishier: they’re dealing with the result of an effectful computation.
+
+// Optionals
+func >=> <A, B, C>(
+  _ f: @escaping (A) -> B?,
+  _ g: @escaping (B) -> C?
+  ) -> ((A) -> C?) {
+    return { a in
+        guard let b = f(a) else { return nil }
+        return g(b)
+    }
+}
+
+let even: (Int) -> Int? = { i in
+    guard i % 2 == 0  else {  return nil }
+    return i
+}
+
+let divisibleBy10: (Int) -> Int? = { i in
+    guard i % 10 == 0 else { return nil }
+    return i
+}
+
+10 |> even >=> divisibleBy10
+8 |> even >=> divisibleBy10
+7 |> even >=> divisibleBy10
+30 |> even >=> divisibleBy10
+
+// Arrays
+
+func >=> <A, B, C>(
+  _ f: @escaping (A) -> [B],
+  _ g: @escaping (B) -> [C]
+  ) -> ((A) -> [C]) {
+
+    return { a in
+        let b = f(a)
+
+        let c = b.flatMap {
+            g($0)
+        }
+        return c
+    }
+}
+
+let append6: (String) -> [String] = { s in
+    return s.map {
+        String($0) + "6"
+    }
+}
+
+let append7: (String) -> [String] = { s in
+    return s.map {
+        String($0) + "7"
+    }
+}
+
+"ABC" |> append6 >=> append7
+"abc" |> append7 >=> append6
 
 
 

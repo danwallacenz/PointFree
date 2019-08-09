@@ -1,4 +1,4 @@
-import UIKit
+// https://www.pointfree.co/episodes/ep5-higher-order-functions
 
 func greet(at date: Date, name: String) -> String {
   let seconds = Int(date.timeIntervalSince1970) % 60

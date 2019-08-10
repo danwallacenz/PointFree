@@ -143,6 +143,7 @@ map(incr) >>> map(square)
 map(incr) >>> map(square) >>> map(String.init)
 
 [1, 2, 3] |> map(incr) >>> map(square) >>> map(decr) >>> map(String.init)
+[1, 2, 3] |> map(incr >>> square >>> decr >>> String.init) // !!	
 
 // Filter
 
@@ -162,3 +163,14 @@ filteredAndIncremented
 let filteredAndIncrementedAndSquared = Array(-2...10) |> filter { $0 > 7 }
 >>> map(incr >>> square)
 filteredAndIncrementedAndSquared
+
+// An aside (Optional map)
+let i: Int? = 2
+i.map {
+    $0 + 23
+}
+
+let n: Int? = nil
+n.map {
+    $0 + 23
+}

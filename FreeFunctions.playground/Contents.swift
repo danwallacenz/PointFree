@@ -254,6 +254,25 @@ func >=> <A, B, C>(
     }
 }
 
+//--------------------------------
+
+func toArray(_ s: String) -> [String] {
+    Array(s).map {
+        String($0)
+    }
+}
+toArray("234")
+
+func toInt(_ s: String) -> [Int] {
+    Array(s).compactMap {
+        Int(String($0))
+    }
+}
+toInt("456")
+
+"a234" |> toArray >=> toInt
+
+//--------------------------------
 let append6: (String) -> [String] = { s in
     return s.map {
         String($0) + "6"
@@ -265,7 +284,7 @@ let append7: (String) -> [String] = { s in
         String($0) + "7"
     }
 }
-
+"ABC" |> append6
 "ABC" |> append6 >=> append7
 "abc" |> append7 >=> append6
 

@@ -234,9 +234,16 @@ let divisibleBy10: (Int) -> Int? = { i in
 }
 
 10 |> even >=> divisibleBy10
+10 |> divisibleBy10 >=> even
+
 8 |> even >=> divisibleBy10
+8 |> divisibleBy10 >=> even
+
 7 |> even >=> divisibleBy10
+7 |> divisibleBy10 >=> even
+
 30 |> even >=> divisibleBy10
+30 |> divisibleBy10 >=> even
 
 // Arrays
 func >=> <A, B, C>(
